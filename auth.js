@@ -1,112 +1,74 @@
-import { auth } from "./firebase-config.js";
-import { listenForMessages, setCurrentUser, stopListeningForMessages } from "./app.js";
+import { auth, db } from "./firebase-config.js";
+import { clearMessages, setCurrentUser, startApp, stopAllListeners } from "./app.js";
 import {
-  createUserWithEmailAndPassword as createUser,
-  onAuthStateChanged,
-  signInWithEmailAndPassword as signIn,
-  signOut as logOut
+  createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, signInWithEmailAndPassword, signOut
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import {
+  deleteDoc, doc, runTransaction, serverTimestamp, setDoc
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-const views = {
-  signin: document.getElementById("view-signin"),
-  signup: document.getElementById("view-signup"),
-  chat: document.getElementById("view-chat")
-};
+const signinView = document.getElementById("view-signin");
+const signupView = document.getElementById("view-signup");
+const chatView = document.getElementById("view-chat");
 const signinForm = document.getElementById("signin-form");
 const signupForm = document.getElementById("signup-form");
-const signinErrorMessage = document.getElementById("auth-error-message");
-const signupErrorMessage = document.getElementById("auth-error-message-signup");
-
-export function createUserWithEmailAndPassword(email, password) {
-  return createUser(auth, email, password);
-}
-
-export function signInWithEmailAndPassword(email, password) {
-  return signIn(auth, email, password);
-}
-
-export function signOut() {
-  return logOut(auth);
-}
+const signinError = document.getElementById("auth-error-message");
+const signupError = document.getElementById("auth-error-message-signup");
+let presenceRef = null;
 
 export function getFriendlyErrorMessage(error) {
-  const messages = {
-    "auth/invalid-credential": "Incorrect email or password. Please try again.",
-    "auth/email-already-in-use": "An account with this email already exists.",
-    "auth/weak-password": "Password should be at least 6 characters.",
-    "auth/invalid-email": "Please enter a valid email address."
-  };
-
-  return messages[error.code] || "Something went wrong. Please try again.";
+  const messages = { "auth/invalid-credential": "Incorrect email or password. Please try again.", "auth/email-already-in-use": "An account with this email already exists.", "auth/weak-password": "Password should be at least 6 characters.", "auth/invalid-email": "Please enter a valid email address." };
+  return error.message === "Username is already taken. Please pick another." ? error.message : (messages[error.code] || "Something went wrong. Please try again.");
 }
 
-function showView(viewName) {
-  Object.entries(views).forEach(([name, view]) => {
-    view.classList.toggle("is-visible", name === viewName);
-    view.setAttribute("aria-hidden", String(name !== viewName));
-  });
+function showView(view) {
+  [signinView, signupView, chatView].forEach((item) => { const active = item === view; item.hidden = !active; item.classList.toggle("is-visible", active); item.setAttribute("aria-hidden", String(!active)); });
 }
-
-function showError(element, error) {
-  element.textContent = getFriendlyErrorMessage(error);
-}
-
-function clearErrors() {
-  signinErrorMessage.textContent = "";
-  signupErrorMessage.textContent = "";
-}
-
-document.getElementById("show-signup-link").addEventListener("click", (event) => {
-  event.preventDefault();
-  clearErrors();
-  showView("signup");
-});
-
-document.getElementById("show-signin-link").addEventListener("click", (event) => {
-  event.preventDefault();
-  clearErrors();
-  showView("signin");
-});
+function showError(element, error) { element.textContent = getFriendlyErrorMessage(error); }
+function clearErrors() { signinError.textContent = ""; signupError.textContent = ""; }
 
 signinForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  clearErrors();
-  const formData = new FormData(signinForm);
-
-  try {
-    await signInWithEmailAndPassword(formData.get("email"), formData.get("password"));
-  } catch (error) {
-    showError(signinErrorMessage, error);
-  }
+  event.preventDefault(); clearErrors();
+  const data = new FormData(signinForm);
+  try { await signInWithEmailAndPassword(auth, data.get("email"), data.get("password")); } catch (error) { showError(signinError, error); }
 });
 
 signupForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  clearErrors();
-  const formData = new FormData(signupForm);
-
+  event.preventDefault(); clearErrors();
+  const data = new FormData(signupForm);
+  const username = data.get("username").trim().toLowerCase();
+  let createdUser;
   try {
-    await createUserWithEmailAndPassword(formData.get("email"), formData.get("password"));
+    const credential = await createUserWithEmailAndPassword(auth, data.get("email"), data.get("password"));
+    createdUser = credential.user;
+    const userRef = doc(db, "users", createdUser.uid);
+    await setDoc(userRef, { uid: createdUser.uid, email: createdUser.email, username, isOnline: true }, { merge: true });
+    await runTransaction(db, async (transaction) => {
+      const usernameRef = doc(db, "usernames", username);
+      if ((await transaction.get(usernameRef)).exists()) throw new Error("Username is already taken. Please pick another.");
+      transaction.set(usernameRef, { uid: createdUser.uid, username });
+    });
   } catch (error) {
-    showError(signupErrorMessage, error);
+    if (createdUser) {
+      await deleteDoc(doc(db, "users", createdUser.uid)).catch(() => {});
+      await deleteUser(createdUser).catch(() => {});
+    }
+    showError(signupError, error);
   }
 });
 
+document.getElementById("show-signup-link").addEventListener("click", (event) => { event.preventDefault(); clearErrors(); showView(signupView); });
+document.getElementById("show-signin-link").addEventListener("click", (event) => { event.preventDefault(); clearErrors(); showView(signinView); });
 document.getElementById("logout-button").addEventListener("click", () => {
-  signOut().catch((error) => console.error("Unable to sign out:", error));
+  stopAllListeners();
+  signOut(auth).catch(console.error);
 });
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   setCurrentUser(user);
-
-  if (user) {
-    clearErrors();
-    showView("chat");
-    listenForMessages();
-    return;
-  }
-
-  stopListeningForMessages();
-  document.getElementById("messages").replaceChildren();
-  showView("signin");
+  if (!user) { if (presenceRef) await setDoc(presenceRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {}); stopAllListeners(); clearMessages(); showView(signinView); return; }
+  presenceRef = doc(db, "users", user.uid);
+  await setDoc(presenceRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+  window.addEventListener("beforeunload", () => setDoc(presenceRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }));
+  clearErrors(); showView(chatView); startApp(user);
 });

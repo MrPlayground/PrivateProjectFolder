@@ -2,10 +2,27 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /messages/{messageId} {
+    match /users/{uid} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null
-        && request.resource.data.uid == request.auth.uid;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /usernames/{username} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+    }
+
+    match /friends/{uid}/userFriends/{friendUid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /public_messages/{messageId} {
+      allow read, create: if request.auth != null;
+    }
+
+    match /direct_messages/{chatId}/messages/{messageId} {
+      allow read, create: if request.auth != null
+        && chatId.matches('.*' + request.auth.uid + '.*');
     }
 
     match /{document=**} {

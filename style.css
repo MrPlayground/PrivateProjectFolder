@@ -52,6 +52,131 @@ body {
     width: 100%;
 }
 
+main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+}
+
+.app-view {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tab-button.is-active {
+    background: #64b5f6;
+    color: #0e1621;
+}
+
+.subview.is-visible {
+    display: flex;
+}
+
+.subview {
+    flex: 1;
+    min-height: 0;
+    gap: 16px;
+}
+
+.sidebar,
+.chat-panel,
+.content-panel {
+    background: #17212b;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.sidebar {
+    flex: 0 0 220px;
+}
+
+.chat-panel {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages {
+    flex: 1;
+    min-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 0;
+}
+
+.message {
+    width: fit-content;
+    max-width: 75%;
+    padding: 10px;
+    border-radius: 8px;
+    background: #5b6670;
+}
+
+.message.sent {
+    align-self: flex-end;
+    background: #b9dcf7;
+    color: #102332;
+}
+
+.message.received {
+    align-self: flex-start;
+}
+
+.message-form,
+#friend-search-form,
+#profile-form {
+    display: flex;
+    gap: 10px;
+}
+
+.message-form textarea {
+    flex: 1;
+}
+
+.online-user::first-letter {
+    color: #42d77d;
+}
+
+.auth-view:not(.is-visible),
+.app-view:not(.is-visible),
+.subview:not(.is-visible) {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .subview {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        flex-basis: auto;
+    }
+
+    .message-form,
+    #friend-search-form,
+    #profile-form {
+        flex-direction: column;
+    }
+}
+
     #sidebar { 
         width: 250px; 
         background: #17212b; 

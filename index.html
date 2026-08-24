@@ -6,12 +6,14 @@
   <link rel="stylesheet" href="style.css">
   <title>Minimal Chat App</title>
 </head>
-<body>    
+<body>
+  <header id="app-header">
+    <h1>Mini Chat</h1>
+    <button type="button" id="logout-button">Log Out</button>
+  </header>
 
   <main>
-    <section id="view-signin" class="auth-view" aria-labelledby="signin-heading">
-    <header id="app-header">
-    <h1 position:center>Mini Chat App</h1>
+    <section id="view-signin" class="auth-view is-visible" aria-labelledby="signin-heading">
       <h2 id="signin-heading">Sign In</h2>
       <form id="signin-form">
         <label for="signin-email">Email</label>
@@ -19,39 +21,64 @@
         <label for="signin-password">Password</label>
         <input type="password" id="signin-password" name="password" autocomplete="current-password" required>
         <button type="submit" id="sign-in-button">Sign In</button>
-        <p>Don't have an account? <a href="#view-signup" id="show-signup-link">Sign up</a></p>
       </form>
+      <p>Don't have an account? <a href="#" id="show-signup-link">Sign up</a></p>
       <div id="auth-error-message" class="auth-error-message" role="alert" aria-live="polite"></div>
     </section>
 
-    <section id="view-signup" class="auth-view" aria-labelledby="signup-heading">
+    <section id="view-signup" class="auth-view" aria-labelledby="signup-heading" hidden>
       <h2 id="signup-heading">Create Account</h2>
       <form id="signup-form">
+        <label for="signup-username">Username</label>
+        <input type="text" id="signup-username" name="username" autocomplete="username" minlength="3" required>
         <label for="signup-email">Email</label>
         <input type="email" id="signup-email" name="email" autocomplete="email" required>
         <label for="signup-password">Password</label>
         <input type="password" id="signup-password" name="password" autocomplete="new-password" minlength="6" required>
         <button type="submit" id="create-account-button">Sign Up</button>
-        <p>Already have an account? <a href="#view-signin" id="show-signin-link">Sign in</a></p>
       </form>
+      <p>Already have an account? <a href="#" id="show-signin-link">Sign in</a></p>
       <div id="auth-error-message-signup" class="auth-error-message" role="alert" aria-live="polite"></div>
     </section>
 
-    <section id="view-chat" class="chat-view" aria-labelledby="chat-heading">
-      <aside id="online-users" aria-labelledby="online-users-heading">
-        <h2 id="online-users-heading">Online Users</h2>
-        <button type="button" id="logout-button">Log Out</button>
-        <ul id="user-list"></ul>
-      </aside>
-      <div id="chat-box">
-        <h2 id="chat-heading">Chat</h2>
-        <div id="messages" aria-live="polite" aria-label="Message history"></div>
-        <form id="message-form">
-          <label for="message-input">Message</label>
-          <textarea id="message-input" name="message" rows="3" placeholder="Write a message..." required></textarea>
-          <button type="submit" id="send-button">Send</button>
-        </form>
-      </div>
+    <section id="view-chat" class="app-view" aria-labelledby="public-chat-heading" hidden>
+      <nav class="tabs" aria-label="Application views">
+        <button type="button" class="tab-button is-active" data-view="public">Public Chat</button>
+        <button type="button" class="tab-button" data-view="dms">Direct Messages</button>
+        <button type="button" class="tab-button" data-view="friends">Friends &amp; Search</button>
+        <button type="button" class="tab-button" data-view="profile">Edit Profile</button>
+      </nav>
+
+      <section id="subview-public" class="subview is-visible" aria-labelledby="public-chat-heading">
+        <aside class="sidebar" aria-labelledby="online-users-heading">
+          <h2 id="online-users-heading">Online Users</h2>
+          <ul id="user-list"></ul>
+        </aside>
+        <div class="chat-panel">
+          <h2 id="public-chat-heading">Public Chat</h2>
+          <div id="messages" class="messages" aria-live="polite" aria-label="Public message history"></div>
+          <form id="message-form" class="message-form">
+            <label for="message-input">Message</label>
+            <textarea id="message-input" rows="3" placeholder="Write a message..." required></textarea>
+            <button type="submit" id="send-button">Send</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="subview-dms" class="subview" aria-labelledby="dms-heading" hidden>
+        <aside class="sidebar"><h2 id="dms-heading">Direct Messages</h2><ul id="friends-list-dm"></ul></aside>
+        <div class="chat-panel"><h2 id="active-dm-heading">Select a friend</h2><div id="direct-messages" class="messages" aria-live="polite"></div>
+          <form id="direct-message-form" class="message-form"><label for="direct-message-input">Message</label><textarea id="direct-message-input" rows="3" required></textarea><button type="submit" id="send-direct-button">Send</button></form>
+        </div>
+      </section>
+
+      <section id="subview-friends" class="subview" aria-labelledby="friends-heading" hidden>
+        <div class="content-panel"><h2 id="friends-heading">Friends &amp; Search</h2><form id="friend-search-form"><label for="friend-search-input">Email or username</label><input id="friend-search-input" required><button type="submit" id="search-friend-button">Search</button></form><div id="friend-search-result"></div><h3>Your Friends</h3><ul id="friends-list"></ul></div>
+      </section>
+
+      <section id="subview-profile" class="subview" aria-labelledby="profile-heading" hidden>
+        <form id="profile-form" class="content-panel"><h2 id="profile-heading">Edit Profile</h2><label for="display-name-input">Display name</label><input id="display-name-input" name="displayName"><label><input type="checkbox" id="online-status-input" name="isOnline"> Show me as online</label><button type="submit" id="save-profile-button">Save Profile</button><div id="profile-status" role="status"></div></form>
+      </section>
     </section>
   </main>
 
