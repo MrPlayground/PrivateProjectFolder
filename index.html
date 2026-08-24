@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minimal Chat App</title>
+  <style src="style.css"></style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <h3>Online Users</h3>
+    <ul id="user-list"></ul>
+  </div>
+
+  <div id="chat-area">
+    <div id="messages"></div>
+    <form id="input-area" onsubmit="sendMessage(event)">
+      <input type="text" id="message-input" placeholder="Write a message..." required autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
