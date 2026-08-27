@@ -22,7 +22,13 @@ export function getFriendlyErrorMessage(error) {
 }
 
 function showView(view) {
-  [signinView, signupView, chatView].forEach((item) => { const active = item === view; item.hidden = !active; item.classList.toggle("is-visible", active); item.setAttribute("aria-hidden", String(!active)); });
+  [signinView, signupView, chatView].forEach((item) => { 
+    const active = item === view; 
+    item.hidden = !active; 
+    item.classList.toggle("is-visible", active);
+    if (!active) item.setAttribute("inert", "");
+    else item.removeAttribute("inert");
+  });
 }
 function showError(element, error) { element.textContent = getFriendlyErrorMessage(error); }
 function clearErrors() { signinError.textContent = ""; signupError.textContent = ""; }
@@ -37,16 +43,27 @@ signupForm.addEventListener("submit", async (event) => {
   event.preventDefault(); clearErrors();
   const data = new FormData(signupForm);
   const username = data.get("username").trim().toLowerCase();
+  const displayName = data.get("username").trim();
   let createdUser;
   try {
     const credential = await createUserWithEmailAndPassword(auth, data.get("email"), data.get("password"));
     createdUser = credential.user;
     const userRef = doc(db, "users", createdUser.uid);
-    await setDoc(userRef, { uid: createdUser.uid, email: createdUser.email, username, isOnline: true }, { merge: true });
+    await setDoc(userRef, { 
+      uid: createdUser.uid, 
+      email: createdUser.email.toLowerCase(),
+      username, 
+      usernameNormalized: username,
+      displayName: displayName,
+      displayNameLower: displayName.toLowerCase(),
+      isOnline: true, 
+      createdAt: serverTimestamp(),
+      searchKeywords: [username, username.substring(0, 1)]
+    }, { merge: true });
     await runTransaction(db, async (transaction) => {
       const usernameRef = doc(db, "usernames", username);
       if ((await transaction.get(usernameRef)).exists()) throw new Error("Username is already taken. Please pick another.");
-      transaction.set(usernameRef, { uid: createdUser.uid, username });
+      transaction.set(usernameRef, { uid: createdUser.uid, username, usernameNormalized: username });
     });
   } catch (error) {
     if (createdUser) {
